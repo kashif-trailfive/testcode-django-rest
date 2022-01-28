@@ -1,6 +1,6 @@
 from django.db.models import Q
 from rest_framework import generics
-from listings.models import BookingInfo, Reservation
+from listings.models import BookingInfo, Reservation, HotelRoom
 from listings.serializers import BookingInfoSerializer, ReservationSerializer
 
 from rest_framework.exceptions import APIException
@@ -27,6 +27,8 @@ class BookingInfoViewSet(generics.ListAPIView):
             check_out = self.request.query_params.get("check_out")
 
             queryset = BookingInfo.objects.all()
+
+            queryset_rooms = HotelRoom.objects.all()
 
             if max_price:
                 queryset = queryset.filter(price__lte=max_price)
