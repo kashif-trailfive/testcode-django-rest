@@ -116,7 +116,7 @@ class Reservation(models.Model):
         blank=True,
         null=True,
         on_delete=models.CASCADE,
-        related_name="booking_info",
+        related_name="reservation",
     )
     check_in = models.DateField()
     check_out = models.DateField()
@@ -125,7 +125,7 @@ class Reservation(models.Model):
         blank=True,
         null=True,
         on_delete=models.CASCADE,
-        related_name="booking_info",
+        related_name="reservation",
     )
     total_price = models.DecimalField(max_digits=6, decimal_places=2, null=True)
     guest_name = models.CharField(
@@ -137,20 +137,3 @@ class Reservation(models.Model):
     def __str__(self):
         return f"from {self.check_in} to {self.check_out}"
 
-    # def save(self, *args, **kwargs):
-    #     """
-    #     on save validate start date and end date
-    #     """
-    #     if self.check_in and self.check_out:
-    #         if self.check_in >= self.check_out:
-    #             raise APIException("Check-in date must be before check-out date")
-
-    #     if self.booking_info:
-    #         if self.booking_info.listing.listing_type != "apartment" and self.hotel_room:
-    #             raise APIException("Room dont belonf to this hotel")
-        
-    #     if self.booking_info and self.hotel_room:
-    #         if self.booking_info.hotel_room_type != self.hotel_room.hotel_room_type:
-    #             raise APIException("Room dont belonf to this hotel")
-
-    #     super(Reservation, self).save(*args, **kwargs)
