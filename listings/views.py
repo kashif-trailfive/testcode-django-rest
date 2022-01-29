@@ -1,3 +1,4 @@
+from curses.ascii import NUL
 from django.db.models import Q
 from rest_framework import generics
 from listings.models import BookingInfo, Reservation, HotelRoom
@@ -28,8 +29,6 @@ class BookingInfoViewSet(generics.ListAPIView):
 
             queryset = BookingInfo.objects.all()
 
-            queryset_rooms = HotelRoom.objects.all()
-
             if max_price:
                 queryset = queryset.filter(price__lte=max_price)
             if check_in and check_out:
@@ -37,9 +36,21 @@ class BookingInfoViewSet(generics.ListAPIView):
                     Q(check_in__gte=check_in, check_in__lte=check_out)
                     | Q(check_out__gte=check_in, check_out__lte=check_out)
                 )
-                queryset = queryset.exclude(
-                    id__in=[item.booking_info.id for item in reserved_listing]
-                )
+                
+                
+                '''Filer Booking on basis of hotel room and apartment'''
+                hotel_rooms = HotelRoom.objects.all()
+
+                for item in reserved_listing:
+                    if(item.hotel_room):
+                        for room in hotel_rooms:
+                            if(room.id == item.hotel_room):
+                                queryset = queryset.exclude(hotel_room_type=room.hotel_room_type)
+           
+                    else:
+                        queryset = queryset.exclude(id__in=[item.booking_info.id for item in reserved_listing])
+          
+
             queryset = queryset.select_related("listing", "hotel_room_type")
             return queryset.order_by("price")
 
