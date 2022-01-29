@@ -1,12 +1,13 @@
+from dataclasses import field
 from rest_framework import serializers
+
+from rest_framework.exceptions import APIException
 
 from listings.models import BookingInfo, Reservation, HotelRoom
 
 from django.db.models import Q
 
 from datetime import datetime
-
-
 
 class BookingInfoSerializer(serializers.ModelSerializer):
     """
@@ -31,7 +32,7 @@ class ReservationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Reservation
-        exclude = ['total_price']
+        fields = '__all__'
 
     def validate(self, data):
 
@@ -48,12 +49,15 @@ class ReservationSerializer(serializers.ModelSerializer):
         """
         Check that room to book belong to a selected hotel.
         """
-        data_booking = BookingInfo.objects.get(id=data['booking_info'].id)
-        listing_type = data_booking.get_listing_type()
-        if(listing_type == "hotel"):
-            data_room = HotelRoom.objects.get(id=data['hotel_room'].id)
-            if(data_room.hotel_room_type.hotel != data_booking.hotel_room_type.hotel):
-                raise serializers.ValidationError("Invalid Room Number")
+        try:
+            data_booking = BookingInfo.objects.get(id=data['booking_info'].id)
+            listing_type = data_booking.get_listing_type()
+            if(listing_type == "hotel"):
+                data_room = HotelRoom.objects.get(id=data['hotel_room'].id)
+                if(data_room.hotel_room_type.hotel != data_booking.hotel_room_type.hotel):
+                    raise serializers.ValidationError("Invalid Room Number")
+        except Exception as e:
+            raise APIException('Provide booking info- Hotel or Apartment')
 
 
         """
@@ -86,5 +90,12 @@ class ReservationSerializer(serializers.ModelSerializer):
 
             if reservations.count() > 0 :
                 raise serializers.ValidationError("Hotel Already Booked")
+
+        '''Price Calculator'''
+        try:
+            delta = data['check_out'] - data['check_in']
+            data['total_price'] = data_booking.price * delta.days
+        except Exception as e:
+            raise APIException(e)
 
         return data
