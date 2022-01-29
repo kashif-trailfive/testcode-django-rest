@@ -48,4 +48,5 @@ class BookingInfoAdmin(admin.ModelAdmin):
 
 @admin.register(Reservation)
 class ReservationInfoAdmin(admin.ModelAdmin):
+    list_display = ("booking_info","check_in","check_out","hotel_room")
     pass

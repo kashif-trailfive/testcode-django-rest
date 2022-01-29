@@ -22,42 +22,46 @@ class BookingInfoViewSet(generics.ListAPIView):
         """
 
         try:
-
             max_price = self.request.query_params.get("max_price")
             check_in = self.request.query_params.get("check_in")
             check_out = self.request.query_params.get("check_out")
 
-            queryset = BookingInfo.objects.all()
-
             if max_price:
-                queryset = queryset.filter(price__lte=max_price)
+                queryset = BookingInfo.objects.filter(price__lte=max_price)
+            else:
+                queryset = BookingInfo.objects.all()
+            queryset = queryset.select_related("listing", "hotel_room_type")
             if check_in and check_out:
                 reserved_listing = Reservation.objects.filter(
                     Q(check_in__gte=check_in, check_in__lte=check_out)
                     | Q(check_out__gte=check_in, check_out__lte=check_out)
                 )
-                
-                
-                '''Filer Booking on basis of hotel room and apartment'''
-                hotel_rooms = HotelRoom.objects.all()
+                queryset = queryset.exclude(
+                    id__in=[item.booking_info.id for item in reserved_listing]
+                ).order_by("-price")
 
-                for item in reserved_listing:
-                    if(item.hotel_room):
-                        for room in hotel_rooms:
-                            if(room.id == item.hotel_room):
-                                queryset = queryset.exclude(hotel_room_type=room.hotel_room_type)
-           
-                    else:
-                        queryset = queryset.exclude(id__in=[item.booking_info.id for item in reserved_listing])
-          
+            hotels_list = queryset.filter(
+                hotel_room_type__hotel__listing_type="hotel"
+            ).values_list("id", flat=True)
+            
+            if hotels_list:
+                for id in hotels_list:
+                    hotel_id = queryset.filter(id=id).values_list(
+                        "hotel_room_type__hotel__id", flat=True
+                    )
+                    hotel_List = queryset.filter(
+                        hotel_room_type__hotel__id=hotel_id[0]
+                    )
+                    if len(hotel_List) > 1:
+                        queryset = queryset.exclude(id=id)
 
-            queryset = queryset.select_related("listing", "hotel_room_type")
             return queryset.order_by("price")
 
         except Exception as e:
             raise APIException(e)
 
-
+# Run URL below
+# http://localhost:8000/api/v1/makereservation
 class ReservationInfoViewSet(generics.ListCreateAPIView):
     """
     ReservationInfoViewSet
