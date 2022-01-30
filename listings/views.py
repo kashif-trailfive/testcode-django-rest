@@ -1,4 +1,3 @@
-from curses.ascii import NUL
 from django.db.models import Q
 from rest_framework import generics
 from listings.models import BookingInfo, Reservation, HotelRoom
@@ -36,22 +35,32 @@ class BookingInfoViewSet(generics.ListAPIView):
                     Q(check_in__gte=check_in, check_in__lte=check_out)
                     | Q(check_out__gte=check_in, check_out__lte=check_out)
                 )
-                queryset = queryset.exclude(
-                    id__in=[item.booking_info.id for item in reserved_listing]
-                ).order_by("-price")
+                for item in reserved_listing:
+                    if item.hotel_room:
+                        hotel_rooms = HotelRoom.objects.filter(
+                            hotel_room_type=item.hotel_room.hotel_room_type
+                        )
+                        reserved_rooms = reserved_listing.filter(
+                            booking_info__hotel_room_type=item.hotel_room.hotel_room_type
+                        )
+                        if len(hotel_rooms) > len(reserved_rooms):
+                            pass
+                        else:
+                            queryset = queryset.exclude(
+                                hotel_room_type=item.booking_info.hotel_room_type
+                            )
+
+                queryset = queryset.order_by("-price")
 
             hotels_list = queryset.filter(
                 hotel_room_type__hotel__listing_type="hotel"
             ).values_list("id", flat=True)
-            
             if hotels_list:
                 for id in hotels_list:
                     hotel_id = queryset.filter(id=id).values_list(
                         "hotel_room_type__hotel__id", flat=True
                     )
-                    hotel_List = queryset.filter(
-                        hotel_room_type__hotel__id=hotel_id[0]
-                    )
+                    hotel_List = queryset.filter(hotel_room_type__hotel__id=hotel_id[0])
                     if len(hotel_List) > 1:
                         queryset = queryset.exclude(id=id)
 
@@ -60,8 +69,7 @@ class BookingInfoViewSet(generics.ListAPIView):
         except Exception as e:
             raise APIException(e)
 
-# Run URL below
-# http://localhost:8000/api/v1/makereservation
+
 class ReservationInfoViewSet(generics.ListCreateAPIView):
     """
     ReservationInfoViewSet
