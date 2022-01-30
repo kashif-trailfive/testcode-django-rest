@@ -69,7 +69,8 @@ class BookingInfoViewSet(generics.ListAPIView):
         except Exception as e:
             raise APIException(e)
 
-
+# Run URL below
+# http://localhost:8000/api/v1/makereservation/
 class ReservationInfoViewSet(generics.ListCreateAPIView):
     """
     ReservationInfoViewSet
