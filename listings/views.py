@@ -49,6 +49,8 @@ class BookingInfoViewSet(generics.ListAPIView):
                             queryset = queryset.exclude(
                                 hotel_room_type=item.booking_info.hotel_room_type
                             )
+                    else:
+                        queryset = queryset.exclude(listing=item.booking_info.listing)
 
                 queryset = queryset.order_by("-price")
 
